@@ -36,16 +36,16 @@ int main(int argc, char *argv[])
     Mat t_scaled = (Mat_<double>(3,1) << 0, 0, 0);
     Mat C_k, C_k_prev, T_k, T_k_prev;
     C_k = (Mat_<double>(4,4) << 1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                0, 0, 0, 1);
+           0, 1, 0, 0,
+           0, 0, 1, 0,
+           0, 0, 0, 1);
     float minEigThreshold = 1e-3;
 
     ofstream fileout;
     fileout.open("/home/dallin/robotic_vision/HW8/VO_Practice_Sequence/vo_estimate.txt");
 
     header = "/home/dallin/robotic_vision/HW8/VO_Practice_Sequence/VO_Practice_Sequence/";
-//    header = "/home/dallin/robotic_vision/HW8/BYU_Hallway_Sequence/BYU_Hallway_Sequence";
+    //    header = "/home/dallin/robotic_vision/HW8/BYU_Hallway_Sequence/BYU_Hallway_Sequence";
     tail = ".png";
 
 
@@ -112,18 +112,18 @@ int main(int argc, char *argv[])
             }
 
 
-            stereoRectifyUncalibrated(corners_prev,corners,F,Size(1226,370),H1,H2,5);
+            //            stereoRectifyUncalibrated(corners_prev,corners,F,Size(1226,370),H1,H2,5);
 
             Mat M1 = (Mat_<double>(3,3) <<  7.070912000000e+02, 0.000000000000e+00, 6.018873000000e+02,
                       0.000000000000e+00, 7.070912000000e+02, 1.831104000000e+02,
                       0.000000000000e+00, 0.000000000000e+00, 1.000000000000e+00);
 
             Mat M2 = M1;
-            undistortPoints(corners_prev,corners_prev_undistort,M1,noArray(),noArray(),noArray());
-            undistortPoints(corners,corners_undistort,M1,noArray(),noArray(),noArray());
+            undistortPoints(corners_prev,corners_prev_undistort,M1,noArray(),noArray(),M1);
+            undistortPoints(corners,corners_undistort,M1,noArray(),noArray(),M1);
 
-//            Mat R1 = M1.inv(DECOMP_LU)*H1*M1;
-//            Mat R2 = M2.inv(DECOMP_LU)*H2*M2;
+            //            Mat R1 = M1.inv(DECOMP_LU)*H1*M1;
+            //            Mat R2 = M2.inv(DECOMP_LU)*H2*M2;
 
             Mat M2_T;
             transpose(M2,M2_T);
@@ -139,13 +139,12 @@ int main(int argc, char *argv[])
             Mat R, t;
 
             recoverPose(E,corners_prev_undistort,corners_undistort,R,t,1.0,Point2d(0,0),noArray());
-
-            for(int i = 0; i < 3; i++)
+            if(t.at<double>(2) > 0)
             {
-                t_scaled.at<double>(0) = t.at<double>(0);
-                t_scaled.at<double>(1) = t.at<double>(1);
-                t_scaled.at<double>(2) = t.at<double>(2);
+                t = -1*t;
             }
+
+            t_scaled = t*1;
 
             C_k_prev = C_k;
             T_k = (Mat_<double>(4,4) << R.at<double>(0), R.at<double>(1), R.at<double>(2), t_scaled.at<double>(0),
@@ -171,10 +170,12 @@ int main(int argc, char *argv[])
         {
             line(image_color,corners[i],corners_prev[i],Scalar(0,0,255),2,LINE_8,0);
         }
+        condition_tracker.clear();
+        remove_tracker.clear();
+        reject_count = 0;
 
-
-        imshow("Image Color", image_color);
-        waitKey(1);
+        //        imshow("Image Color", image_color);
+        //        waitKey(1);
 
     }
     fileout.close();
